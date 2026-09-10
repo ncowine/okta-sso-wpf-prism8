@@ -1,0 +1,16 @@
+<UserControl x:Class="SsoDemo.Wpf.Views.AuthenticatingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True">
+
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360">
+            <TextBlock Text="Single Sign-On" Style="{StaticResource Heading}"
+                       HorizontalAlignment="Center" />
+            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,18" BorderThickness="0" />
+            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Subtle}"
+                       HorizontalAlignment="Center" TextAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</UserControl>

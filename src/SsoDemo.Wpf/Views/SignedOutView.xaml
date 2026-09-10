@@ -1,0 +1,22 @@
+<UserControl x:Class="SsoDemo.Wpf.Views.SignedOutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True">
+
+    <Grid>
+        <Border Style="{StaticResource Card}" Width="360"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel>
+                <TextBlock Text="Signed out" Style="{StaticResource Heading}" />
+                <TextBlock Style="{StaticResource Subtle}" Margin="0,6,0,20"
+                           Text="Your local session has been cleared." />
+
+                <Button Content="Sign in"
+                        Style="{StaticResource PrimaryButton}"
+                        HorizontalAlignment="Left"
+                        Command="{Binding SignInCommand}" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

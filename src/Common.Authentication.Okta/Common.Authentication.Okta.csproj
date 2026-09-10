@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Common.Authentication.Okta</RootNamespace>
+    <AssemblyName>Common.Authentication.Okta</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Standard .NET OIDC client: discovery, Authorization Code + PKCE, state/nonce,
+         ID-token validation, token endpoint calls and refresh. No custom protocol code. -->
+    <PackageReference Include="IdentityModel.OidcClient" Version="6.0.0" />
+
+    <!-- Access-token (JWT) validation against Okta: JWKS signature, issuer, audience, lifetime. -->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.0.2" />
+
+    <!-- Bridges OidcClient's ILogger to System.Diagnostics.Debug. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+
+    <!-- DPAPI-backed secure storage for the refresh/ID tokens (CurrentUser scope). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
