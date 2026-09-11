@@ -12,16 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Standard .NET OIDC client: discovery, Authorization Code + PKCE, state/nonce,
-         ID-token validation, token endpoint calls and refresh. No custom protocol code. -->
-    <PackageReference Include="IdentityModel.OidcClient" Version="6.0.0" />
-
-    <!-- Access-token (JWT) validation against Okta: JWKS signature, issuer, audience, lifetime. -->
+    <!-- OIDC discovery metadata (authorization/token endpoints, JWKS) + access-token (JWT)
+         validation against Okta: JWKS signature, issuer, audience, lifetime. The Authorization
+         Code + PKCE flow itself (Oidc/OidcAuthorizationCodeClient) is hand-rolled on top of these
+         plus plain HttpClient — no third-party OIDC client package. -->
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.2" />
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.0.2" />
-
-    <!-- Bridges OidcClient's ILogger to System.Diagnostics.Debug. -->
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
 
     <!-- DPAPI-backed secure storage for the refresh/ID tokens (CurrentUser scope). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
