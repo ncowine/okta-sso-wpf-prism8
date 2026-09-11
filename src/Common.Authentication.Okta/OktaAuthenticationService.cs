@@ -30,7 +30,7 @@ namespace Common.Authentication.Okta
             IAccessTokenValidator accessTokenValidator,
             IClaimsPrincipalFactory principalFactory,
             ITokenStore tokenStore,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory? loggerFactory = null)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
             this.accessTokenValidator = accessTokenValidator ?? throw new ArgumentNullException(nameof(accessTokenValidator));
@@ -45,7 +45,13 @@ namespace Common.Authentication.Okta
                 RedirectUri = options.RedirectUri,
                 PostLogoutRedirectUri = options.PostLogoutRedirectUri,
                 Browser = browser ?? throw new ArgumentNullException(nameof(browser)),
-                LoggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)),
+
+                // OidcClient requires an ILoggerFactory; a host app that has no interest in
+                // Microsoft.Extensions.Logging shouldn't have to build one just to sign in, so we
+                // default to bridging it straight to Debug.WriteLine (this project's own log sink).
+                LoggerFactory = loggerFactory ?? LoggerFactory.Create(builder => builder
+                    .SetMinimumLevel(LogLevel.Debug)
+                    .AddDebug()),
 
                 // The principal is built from the validated access token, so skip the userinfo call.
                 LoadProfile = false,

@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- net8.0-windows for the modern demo host; net472 so any .NET Framework WPF app can
+         reference this library too (it owns the WPF single-instance/custom-scheme ceremony). -->
+    <TargetFrameworks>net8.0-windows;net472</TargetFrameworks>
+    <UseWPF>true</UseWPF>
     <RootNamespace>Common.Authentication.Okta</RootNamespace>
     <AssemblyName>Common.Authentication.Okta</AssemblyName>
     <Nullable>enable</Nullable>
@@ -20,11 +23,22 @@
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.2" />
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.0.2" />
 
-    <!-- Bridges OidcClient's ILogger to System.Diagnostics.Debug. -->
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <!-- Backs OidcClient's required ILoggerFactory with a Debug.WriteLine sink by default,
+         so a host app doesn't have to wire up Microsoft.Extensions.Logging itself. -->
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 
     <!-- DPAPI-backed secure storage for the refresh/ID tokens (CurrentUser scope). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <!-- System.Text.Json ships in the net8.0 shared framework but is a separate package on .NET Framework. -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+
+    <!-- Reference assemblies for net472 so this project builds headlessly without a full VS/.NET
+         Framework targeting-pack install (e.g. on a CI agent that only has the .NET SDK). -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

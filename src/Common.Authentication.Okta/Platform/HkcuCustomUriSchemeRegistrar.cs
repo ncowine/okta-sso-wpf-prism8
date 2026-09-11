@@ -46,8 +46,10 @@ namespace Common.Authentication.Okta.Platform
 
         private static string BuildLaunchCommand()
         {
-            var processPath = Environment.ProcessPath
-                ?? Process.GetCurrentProcess().MainModule?.FileName
+            // Process.GetCurrentProcess().MainModule.FileName (rather than the newer
+            // Environment.ProcessPath, which .NET Framework doesn't have) works identically on
+            // every target this library builds for.
+            var processPath = Process.GetCurrentProcess().MainModule?.FileName
                 ?? throw new InvalidOperationException("Could not determine the current executable path.");
 
             // When launched through `dotnet run` / `dotnet SsoDemo.Wpf.dll` the host is dotnet.exe;

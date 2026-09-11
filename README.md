@@ -28,7 +28,7 @@ For a real tenant, see [Configure Okta](#configure-okta) below.
 
 ```
 SsoDemo.sln
-├── src/Common.Authentication.Okta/   Reusable auth library (no WPF references)
+├── src/Common.Authentication.Okta/   Reusable auth + WPF-host library (net8.0-windows;net472)
 ├── src/SsoDemo.Wpf/                   WPF shell (Prism + DryIoc, MVVM)
 ├── tools/DummyIdp/                    Local stub OpenID Connect provider + token exchange (dev only)
 ├── tools/DemoApi/                     JWT-bearer-protected test API (dev only)
@@ -57,6 +57,7 @@ both from the Welcome screen:
 | `Browser/SystemBrowser` + `BrowserCallbackChannel` | `IBrowser` for OidcClient using the OS default browser |
 | `Platform/HkcuCustomUriSchemeRegistrar` | Registers the `app://` scheme under `HKCU` |
 | `Platform/NamedPipeSingleInstanceCoordinator` | Single-instance + forwards the `app://auth/callback` redirect |
+| `Wpf/OktaSsoHost` | Plug-and-play WPF ceremony: bundles the three types above behind `TryStart(args)` (`OnStartup`) / `Activate(mainWindow)` (`OnInitialized`) / `Dispose()` (`OnExit`) — see `App.xaml.cs` |
 
 ### Claims mapping
 
@@ -123,7 +124,7 @@ reg delete HKCU\Software\Classes\app /f
 ## Logging
 
 Everything logs through `Debug.WriteLine` — watch it in the Visual Studio **Output** window
-or with **DebugView** (SysInternals). Prefixes: `[App]`, `[OktaAuthenticationService]`,
+or with **DebugView** (SysInternals). Prefixes: `[App]`, `[OktaSsoHost]`, `[OktaAuthenticationService]`,
 `[OktaAccessTokenValidator]`, `[OktaClaimsPrincipalFactory]`, `[SystemBrowser]`,
 `[BrowserCallbackChannel]`, `[SingleInstance]`, `[DpapiTokenStore]`,
 `[HkcuCustomUriSchemeRegistrar]`, `[OktaOptionsFactory]`.
@@ -143,3 +144,7 @@ same `Debug.WriteLine` sink.
 
 - .NET SDK 8.0.x (pinned in `global.json`)
 - Windows (WPF + DPAPI + registry)
+
+`Common.Authentication.Okta` multi-targets `net8.0-windows` and `net472`, so it can be referenced
+from a .NET Framework 4.7.2 WPF app as well as this net8.0 demo — the demo app itself stays
+net8.0-windows only.

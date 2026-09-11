@@ -44,7 +44,10 @@ namespace Common.Authentication.Okta.Platform
 
         public void StartListening(Action<string> onActivationArgumentReceived)
         {
-            ArgumentNullException.ThrowIfNull(onActivationArgumentReceived);
+            if (onActivationArgumentReceived is null)
+            {
+                throw new ArgumentNullException(nameof(onActivationArgumentReceived));
+            }
 
             if (!ownsMutex)
             {
@@ -62,7 +65,10 @@ namespace Common.Authentication.Okta.Platform
 
         public void SignalPrimary(string argument)
         {
-            ArgumentNullException.ThrowIfNull(argument);
+            if (argument is null)
+            {
+                throw new ArgumentNullException(nameof(argument));
+            }
 
             try
             {
@@ -95,7 +101,9 @@ namespace Common.Authentication.Okta.Platform
                     await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
 
                     using var reader = new StreamReader(server, new UTF8Encoding(false));
-                    var argument = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                    // The CancellationToken overload of ReadLineAsync isn't available on .NET
+                    // Framework; WaitForConnectionAsync above already gates the loop on cancellation.
+                    var argument = await reader.ReadLineAsync().ConfigureAwait(false);
 
                     if (!string.IsNullOrWhiteSpace(argument))
                     {
@@ -125,8 +133,15 @@ namespace Common.Authentication.Okta.Platform
         private static string Scope(string applicationId)
         {
             var raw = $"{applicationId}|{Environment.UserName}";
-            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
-            return "SsoDemo_" + Convert.ToHexString(hash, 0, 8);
+            byte[] hash;
+            using (var sha256 = SHA256.Create())
+            {
+                hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(raw));
+            }
+
+            // BitConverter.ToString/Convert.ToHexString both upper-case; this avoids the
+            // .NET-Framework-incompatible Convert.ToHexString overload.
+            return "SsoDemo_" + BitConverter.ToString(hash, 0, 8).Replace("-", string.Empty);
         }
 
         public void Dispose()

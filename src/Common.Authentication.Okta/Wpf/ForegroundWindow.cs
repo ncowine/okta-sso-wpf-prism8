@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 
-namespace SsoDemo.Wpf.Infrastructure
+namespace Common.Authentication.Okta.Wpf
 {
     /// <summary>
     /// Brings the app window back to the user after the external browser hands the OAuth callback
@@ -39,7 +39,7 @@ namespace SsoDemo.Wpf.Infrastructure
 
         /// <summary>
         /// Called by the short-lived secondary instance (the one the OS launches for the
-        /// <c>app://</c> redirect) so the already-running app is permitted to foreground itself.
+        /// <c>{scheme}://</c> redirect) so the already-running app is permitted to foreground itself.
         /// </summary>
         public static void GrantToRunningInstance()
         {

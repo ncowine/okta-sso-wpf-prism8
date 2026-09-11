@@ -10,13 +10,13 @@ namespace Common.Authentication.Okta
         {
         }
 
-        public bool Success { get; private init; }
+        public bool Success { get; private set; }
 
-        public ClaimsPrincipal? Principal { get; private init; }
+        public ClaimsPrincipal? Principal { get; private set; }
 
-        public TokenSet? Tokens { get; private init; }
+        public TokenSet? Tokens { get; private set; }
 
-        public string? Error { get; private init; }
+        public string? Error { get; private set; }
 
         public static AuthenticationResult Ok(ClaimsPrincipal principal, TokenSet tokens) => new()
         {

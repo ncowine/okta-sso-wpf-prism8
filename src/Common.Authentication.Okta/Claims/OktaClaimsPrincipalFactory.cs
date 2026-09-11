@@ -92,7 +92,9 @@ namespace Common.Authentication.Okta.Claims
                     $"The access token does not contain the required '{claimType}' claim used for the user name.");
             }
 
-            return value;
+            // The .NET Framework reference assemblies don't carry the [NotNullWhen] annotation on
+            // string.IsNullOrWhiteSpace, so the compiler can't narrow this on its own there.
+            return value!;
         }
     }
 }

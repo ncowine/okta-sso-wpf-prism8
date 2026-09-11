@@ -1,17 +1,14 @@
 using System;
 using System.Configuration;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Common.Authentication.Okta;
 using Common.Authentication.Okta.Browser;
 using Common.Authentication.Okta.Claims;
-using Common.Authentication.Okta.Platform;
 using Common.Authentication.Okta.Tokens;
+using Common.Authentication.Okta.Wpf;
 using IdentityModel.OidcClient.Browser;
-using Microsoft.Extensions.Logging;
 using Prism.DryIoc;
 using Prism.Ioc;
 using Prism.Regions;
@@ -25,11 +22,10 @@ namespace SsoDemo.Wpf
     /// <summary>Prism + DryIoc application host.</summary>
     public partial class App : PrismApplication
     {
-        private const string SingleInstanceId = "SsoDemo.Wpf";
+        private const string ApplicationId = "SsoDemo.Wpf";
 
-        private ISingleInstanceCoordinator? singleInstance;
-        private string customUriScheme = "app";
-        private string? activationArgument;
+        private OktaAuthenticationOptions? oktaOptions;
+        private OktaSsoHost? ssoHost;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -54,28 +50,16 @@ namespace SsoDemo.Wpf
                 System.Diagnostics.Trace.AutoFlush = true;
             }
 
-            customUriScheme = ConfigurationManager.AppSettings["Okta:CustomUriScheme"] ?? "app";
-            activationArgument = e.Args.FirstOrDefault(IsSchemeActivation);
+            // The Okta SSO ceremony (single-instance enforcement, custom-URI-scheme registration,
+            // routing the browser's OAuth redirect back into this process) lives in the library —
+            // see Common.Authentication.Okta.Wpf.OktaSsoHost.
+            oktaOptions = OktaOptionsFactory.FromAppConfig();
+            ssoHost = new OktaSsoHost(oktaOptions, ApplicationId);
 
-            singleInstance = new NamedPipeSingleInstanceCoordinator(SingleInstanceId);
-
-            if (!singleInstance.IsPrimaryInstance)
+            if (!ssoHost.TryStart(e.Args))
             {
-                if (activationArgument is not null)
-                {
-                    Debug.WriteLine("[App] Secondary instance: forwarding OAuth callback to the running app.");
-                    // Let the running instance pull itself to the foreground once it has the callback.
-                    ForegroundWindow.GrantToRunningInstance();
-                    singleInstance.SignalPrimary(activationArgument);
-                    Thread.Sleep(250);
-                }
-                else
-                {
-                    Debug.WriteLine("[App] Another instance is already running; exiting.");
-                }
-
-                singleInstance.Dispose();
-                singleInstance = null;
+                ssoHost.Dispose();
+                ssoHost = null;
                 Shutdown();
                 return;
             }
@@ -92,8 +76,8 @@ namespace SsoDemo.Wpf
                     "Okta SSO Demo — startup error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
-                singleInstance?.Dispose();
-                singleInstance = null;
+                ssoHost?.Dispose();
+                ssoHost = null;
                 Shutdown(1);
             }
         }
@@ -102,21 +86,14 @@ namespace SsoDemo.Wpf
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            var options = OktaOptionsFactory.FromAppConfig();
-            containerRegistry.RegisterInstance(options);
+            containerRegistry.RegisterInstance(ssoHost!.CallbackChannel);
+            containerRegistry.RegisterInstance(oktaOptions!);
 
-            var loggerFactory = LoggerFactory.Create(builder => builder
-                .SetMinimumLevel(LogLevel.Debug)
-                .AddDebug());
-            containerRegistry.RegisterInstance<ILoggerFactory>(loggerFactory);
-
-            containerRegistry.RegisterSingleton<IBrowserCallbackChannel, BrowserCallbackChannel>();
             containerRegistry.RegisterSingleton<IBrowser, SystemBrowser>();
             containerRegistry.RegisterSingleton<IAccessTokenValidator, OktaAccessTokenValidator>();
             containerRegistry.RegisterSingleton<IClaimsPrincipalFactory, OktaClaimsPrincipalFactory>();
             containerRegistry.RegisterSingleton<ITokenStore, DpapiTokenStore>();
             containerRegistry.RegisterSingleton<IOktaAuthenticationService, OktaAuthenticationService>();
-            containerRegistry.RegisterSingleton<ICustomUriSchemeRegistrar, HkcuCustomUriSchemeRegistrar>();
 
             containerRegistry.RegisterInstance(new DemoApiOptions
             {
@@ -140,26 +117,7 @@ namespace SsoDemo.Wpf
         {
             base.OnInitialized();
 
-            Container.Resolve<ICustomUriSchemeRegistrar>().EnsureRegistered();
-
-            var callbackChannel = Container.Resolve<IBrowserCallbackChannel>();
-            singleInstance!.StartListening(argument =>
-            {
-                if (!IsSchemeActivation(argument))
-                {
-                    return;
-                }
-
-                Debug.WriteLine("[App] Routing forwarded OAuth callback to the browser channel.");
-                callbackChannel.Publish(argument);
-                Dispatcher.BeginInvoke(new Action(() => ForegroundWindow.Bring(MainWindow)));
-            });
-
-            if (activationArgument is not null)
-            {
-                callbackChannel.Publish(activationArgument);
-                ForegroundWindow.Bring(MainWindow);
-            }
+            ssoHost!.Activate(MainWindow);
 
             // The Authenticating view drives the silent-then-browser sign-in flow on navigation.
             Container.Resolve<IRegionManager>().RequestNavigate(RegionNames.Content, ViewNames.Authenticating);
@@ -167,12 +125,8 @@ namespace SsoDemo.Wpf
 
         protected override void OnExit(ExitEventArgs e)
         {
-            singleInstance?.Dispose();
+            ssoHost?.Dispose();
             base.OnExit(e);
         }
-
-        private bool IsSchemeActivation(string? argument) =>
-            argument is not null &&
-            argument.StartsWith(customUriScheme + ":", StringComparison.OrdinalIgnoreCase);
     }
 }

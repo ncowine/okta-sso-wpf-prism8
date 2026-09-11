@@ -38,7 +38,14 @@ namespace Common.Authentication.Okta.Tokens
             await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                await File.WriteAllBytesAsync(filePath, protectedBytes, cancellationToken).ConfigureAwait(false);
+                // FileStream.WriteAsync rather than File.WriteAllBytesAsync (not available on
+                // .NET Framework) so this works identically on every target of this library.
+                using (var stream = new FileStream(
+                    filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true))
+                {
+                    await stream.WriteAsync(protectedBytes, 0, protectedBytes.Length, cancellationToken).ConfigureAwait(false);
+                }
+
                 Debug.WriteLine($"[DpapiTokenStore] Saved token set to {filePath}.");
             }
             finally
@@ -57,7 +64,25 @@ namespace Common.Authentication.Okta.Tokens
                     return null;
                 }
 
-                var protectedBytes = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
+                byte[] protectedBytes;
+                using (var stream = new FileStream(
+                    filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+                {
+                    protectedBytes = new byte[stream.Length];
+                    var offset = 0;
+                    while (offset < protectedBytes.Length)
+                    {
+                        var read = await stream.ReadAsync(protectedBytes, offset, protectedBytes.Length - offset, cancellationToken)
+                            .ConfigureAwait(false);
+                        if (read == 0)
+                        {
+                            break;
+                        }
+
+                        offset += read;
+                    }
+                }
+
                 var plaintext = ProtectedData.Unprotect(protectedBytes, Entropy, DataProtectionScope.CurrentUser);
                 return JsonSerializer.Deserialize<TokenSet>(plaintext);
             }
