@@ -10,6 +10,8 @@ using Common.Authentication.Okta.Browser;
 using Common.Authentication.Okta.Claims;
 using Common.Authentication.Okta.Platform;
 using Common.Authentication.Okta.Tokens;
+using IdentityModel.OidcClient.Browser;
+using Microsoft.Extensions.Logging;
 using Prism.DryIoc;
 using Prism.Ioc;
 using Prism.Regions;
@@ -102,6 +104,11 @@ namespace SsoDemo.Wpf
         {
             var options = OktaOptionsFactory.FromAppConfig();
             containerRegistry.RegisterInstance(options);
+
+            var loggerFactory = LoggerFactory.Create(builder => builder
+                .SetMinimumLevel(LogLevel.Debug)
+                .AddDebug());
+            containerRegistry.RegisterInstance<ILoggerFactory>(loggerFactory);
 
             containerRegistry.RegisterSingleton<IBrowserCallbackChannel, BrowserCallbackChannel>();
             containerRegistry.RegisterSingleton<IBrowser, SystemBrowser>();

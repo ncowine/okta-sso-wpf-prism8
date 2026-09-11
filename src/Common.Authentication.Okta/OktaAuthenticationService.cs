@@ -3,16 +3,17 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Authentication.Okta.Browser;
 using Common.Authentication.Okta.Claims;
-using Common.Authentication.Okta.Oidc;
 using Common.Authentication.Okta.Tokens;
+using IdentityModel.OidcClient;
+using IdentityModel.OidcClient.Browser;
+using Microsoft.Extensions.Logging;
 
 namespace Common.Authentication.Okta
 {
     /// <summary>
-    /// Coordinates the hand-rolled OIDC client (<see cref="OidcAuthorizationCodeClient"/>) with
-    /// access-token validation, the tenant-specific claims mapping and encrypted token storage.
+    /// Coordinates the standard OIDC library (<see cref="OidcClient"/>) with access-token validation,
+    /// the tenant-specific claims mapping and encrypted token storage.
     /// </summary>
     public sealed class OktaAuthenticationService : IOktaAuthenticationService
     {
@@ -20,7 +21,7 @@ namespace Common.Authentication.Okta
         private readonly IAccessTokenValidator accessTokenValidator;
         private readonly IClaimsPrincipalFactory principalFactory;
         private readonly ITokenStore tokenStore;
-        private readonly OidcAuthorizationCodeClient oidcClient;
+        private readonly OidcClient oidcClient;
         private readonly SemaphoreSlim gate = new(1, 1);
 
         public OktaAuthenticationService(
@@ -28,16 +29,35 @@ namespace Common.Authentication.Okta
             IBrowser browser,
             IAccessTokenValidator accessTokenValidator,
             IClaimsPrincipalFactory principalFactory,
-            ITokenStore tokenStore)
+            ITokenStore tokenStore,
+            ILoggerFactory loggerFactory)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
             this.accessTokenValidator = accessTokenValidator ?? throw new ArgumentNullException(nameof(accessTokenValidator));
             this.principalFactory = principalFactory ?? throw new ArgumentNullException(nameof(principalFactory));
             this.tokenStore = tokenStore ?? throw new ArgumentNullException(nameof(tokenStore));
 
-            oidcClient = new OidcAuthorizationCodeClient(
-                this.options,
-                browser ?? throw new ArgumentNullException(nameof(browser)));
+            var oidcOptions = new OidcClientOptions
+            {
+                Authority = options.Authority,
+                ClientId = options.ClientId,
+                Scope = options.Scope,
+                RedirectUri = options.RedirectUri,
+                PostLogoutRedirectUri = options.PostLogoutRedirectUri,
+                Browser = browser ?? throw new ArgumentNullException(nameof(browser)),
+                LoggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)),
+
+                // The principal is built from the validated access token, so skip the userinfo call.
+                LoadProfile = false,
+            };
+
+            if (options.AllowInsecureHttp)
+            {
+                // DEV ONLY: lets discovery/token calls hit the http://localhost dummy IdP.
+                oidcOptions.Policy.Discovery.RequireHttps = false;
+            }
+
+            oidcClient = new OidcClient(oidcOptions);
         }
 
         private TokenSet? currentTokens;
@@ -67,7 +87,7 @@ namespace Common.Authentication.Okta
 
                 Debug.WriteLine("[OktaAuthenticationService] Access token near expiry; refreshing for API call.");
                 var refresh = await oidcClient
-                    .RefreshTokenAsync(currentTokens.RefreshToken, cancellationToken)
+                    .RefreshTokenAsync(currentTokens.RefreshToken, cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
 
                 if (refresh.IsError)
@@ -102,7 +122,7 @@ namespace Common.Authentication.Okta
             try
             {
                 Debug.WriteLine("[OktaAuthenticationService] Starting interactive sign-in.");
-                var login = await oidcClient.LoginAsync(cancellationToken).ConfigureAwait(false);
+                var login = await oidcClient.LoginAsync(new LoginRequest(), cancellationToken).ConfigureAwait(false);
 
                 if (login.IsError)
                 {
@@ -142,7 +162,7 @@ namespace Common.Authentication.Okta
 
                 Debug.WriteLine("[OktaAuthenticationService] Attempting silent sign-in with stored refresh token.");
                 var refresh = await oidcClient
-                    .RefreshTokenAsync(stored.RefreshToken, cancellationToken)
+                    .RefreshTokenAsync(stored.RefreshToken, cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
 
                 if (refresh.IsError)

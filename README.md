@@ -5,10 +5,10 @@ and standard/official packages only:
 
 | Concern | Package |
 | --- | --- |
-| OIDC flow (Authorization Code + PKCE, discovery, refresh) | Hand-rolled (`Oidc/OidcAuthorizationCodeClient`) on `HttpClient` + `Microsoft.IdentityModel.Protocols.OpenIdConnect` — no third-party OIDC client package |
+| OIDC flow (Authorization Code + PKCE, discovery, refresh) | `IdentityModel.OidcClient` |
 | Access-token validation (JWKS signature, issuer, audience, lifetime) | `Microsoft.IdentityModel.JsonWebTokens`, `Microsoft.IdentityModel.Protocols.OpenIdConnect` |
 | Encrypted token storage | `System.Security.Cryptography.ProtectedData` (Windows DPAPI) |
-| Logging | `System.Diagnostics.Debug.WriteLine` |
+| Logging | `Microsoft.Extensions.Logging.Debug` → `System.Diagnostics.Debug.WriteLine` |
 | Config | `System.Configuration.ConfigurationManager` (`App.config` `<appSettings>`) |
 
 ## Quick start — no Okta tenant needed
@@ -54,8 +54,7 @@ both from the Welcome screen:
 | `IAccessTokenValidator` / `OktaAccessTokenValidator` | Full JWT validation against tenant OIDC metadata |
 | `IClaimsPrincipalFactory` / `OktaClaimsPrincipalFactory` | Maps the tenant's custom access-token claims to a `ClaimsPrincipal` |
 | `ITokenStore` / `DpapiTokenStore` | DPAPI-encrypted token persistence for silent refresh |
-| `Oidc/OidcAuthorizationCodeClient` | Authorization Code + PKCE flow, discovery, refresh — hand-rolled, no OIDC client package |
-| `Browser/SystemBrowser` + `BrowserCallbackChannel` | `IBrowser` for `OidcAuthorizationCodeClient` using the OS default browser |
+| `Browser/SystemBrowser` + `BrowserCallbackChannel` | `IBrowser` for OidcClient using the OS default browser |
 | `Platform/HkcuCustomUriSchemeRegistrar` | Registers the `app://` scheme under `HKCU` |
 | `Platform/NamedPipeSingleInstanceCoordinator` | Single-instance + forwards the `app://auth/callback` redirect |
 
@@ -125,8 +124,8 @@ reg delete HKCU\Software\Classes\app /f
 
 Everything logs through `Debug.WriteLine` — watch it in the Visual Studio **Output** window
 or with **DebugView** (SysInternals). Prefixes: `[App]`, `[OktaAuthenticationService]`,
-`[OktaAccessTokenValidator]`, `[OktaClaimsPrincipalFactory]`, `[OidcAuthorizationCodeClient]`,
-`[SystemBrowser]`, `[BrowserCallbackChannel]`, `[SingleInstance]`, `[DpapiTokenStore]`,
+`[OktaAccessTokenValidator]`, `[OktaClaimsPrincipalFactory]`, `[SystemBrowser]`,
+`[BrowserCallbackChannel]`, `[SingleInstance]`, `[DpapiTokenStore]`,
 `[HkcuCustomUriSchemeRegistrar]`, `[OktaOptionsFactory]`.
 
 To also tee the same output to a file (useful when not running under a debugger), set
@@ -136,6 +135,9 @@ To also tee the same output to a file (useful when not running under a debugger)
 set SSODEMO_TRACE_FILE=%TEMP%\ssodemo.log
 dotnet run --project src/SsoDemo.Wpf
 ```
+
+`Microsoft.Extensions.Logging.Debug` routes the OidcClient library's own logs through the
+same `Debug.WriteLine` sink.
 
 ## Requirements
 
