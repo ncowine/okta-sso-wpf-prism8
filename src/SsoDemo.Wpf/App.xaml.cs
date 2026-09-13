@@ -19,7 +19,11 @@ using SsoDemo.Wpf.Views;
 
 namespace SsoDemo.Wpf
 {
-    /// <summary>Prism + DryIoc application host.</summary>
+    /// <summary>
+    /// Prism + DryIoc application host. Owns the whole sign-in gate: the shell is never created
+    /// or shown until <see cref="OnInitialized"/> has confirmed the user is authenticated. There
+    /// is no in-app sign-out — closing the app (Exit) is the only way out.
+    /// </summary>
     public partial class App : PrismApplication
     {
         private const string ApplicationId = "SsoDemo.Wpf";
@@ -44,10 +48,10 @@ namespace SsoDemo.Wpf
                 args.SetObserved();
             };
 
-            if (Environment.GetEnvironmentVariable("SSODEMO_TRACE_FILE") is { Length: > 0 } traceFile)
+            if (ConfigurationManager.AppSettings["Diagnostics:TraceFile"] is { Length: > 0 } traceFile)
             {
-                System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(traceFile));
-                System.Diagnostics.Trace.AutoFlush = true;
+                Trace.Listeners.Add(new TextWriterTraceListener(traceFile));
+                Trace.AutoFlush = true;
             }
 
             // The Okta SSO ceremony (single-instance enforcement, custom-URI-scheme registration,
@@ -82,7 +86,9 @@ namespace SsoDemo.Wpf
             }
         }
 
-        protected override Window CreateShell() => Container.Resolve<MainWindow>();
+        // The shell is gated behind sign-in (see OnInitialized) — Prism must not create or show
+        // it as part of its normal startup pipeline.
+        protected override Window? CreateShell() => null;
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
@@ -97,30 +103,55 @@ namespace SsoDemo.Wpf
 
             containerRegistry.RegisterInstance(new DemoApiOptions
             {
-                BaseUrl = Environment.GetEnvironmentVariable("SSO_API_BASEURL")
-                    ?? ConfigurationManager.AppSettings["Api:BaseUrl"]
-                    ?? "http://localhost:5006",
-                BaseUrlB = Environment.GetEnvironmentVariable("SSO_API_BASEURL_B")
-                    ?? ConfigurationManager.AppSettings["Api:BaseUrlB"]
-                    ?? "http://localhost:5007",
+                BaseUrl = ConfigurationManager.AppSettings["Api:BaseUrl"] ?? "http://localhost:5006",
+                BaseUrlB = ConfigurationManager.AppSettings["Api:BaseUrlB"] ?? "http://localhost:5007",
             });
             containerRegistry.RegisterSingleton<IDemoApiClient, DemoApiClient>();
             containerRegistry.RegisterSingleton<IDemoApiBClient, DemoApiBClient>();
 
-            containerRegistry.RegisterForNavigation<AuthenticatingView, AuthenticatingViewModel>(ViewNames.Authenticating);
             containerRegistry.RegisterForNavigation<WelcomeView, WelcomeViewModel>(ViewNames.Welcome);
-            containerRegistry.RegisterForNavigation<SignedOutView, SignedOutViewModel>(ViewNames.SignedOut);
-            containerRegistry.RegisterForNavigation<AccessDeniedView, AccessDeniedViewModel>(ViewNames.AccessDenied);
         }
 
-        protected override void OnInitialized()
+        protected override async void OnInitialized()
         {
             base.OnInitialized();
 
-            ssoHost!.Activate(MainWindow);
+            // Scheme registration + callback routing must be armed before sign-in starts; no window
+            // needs to exist yet — the shell isn't even created until sign-in succeeds.
+            ssoHost!.Activate();
 
-            // The Authenticating view drives the silent-then-browser sign-in flow on navigation.
-            Container.Resolve<IRegionManager>().RequestNavigate(RegionNames.Content, ViewNames.Authenticating);
+            // No sign-in UI: silent refresh first, then the browser flow, entirely headless.
+            var authentication = Container.Resolve<IOktaAuthenticationService>();
+            var result = await authentication.TrySignInSilentAsync();
+            if (!result.Success)
+            {
+                result = await authentication.SignInInteractiveAsync();
+            }
+
+            if (!result.Success)
+            {
+                Debug.WriteLine($"[App] Sign-in failed; exiting without showing the shell: {result.Error}");
+                MessageBox.Show(
+                    "You don't have permission to access this application.\n\n" + result.Error,
+                    "Okta SSO Demo — access denied",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Shutdown(1);
+                return;
+            }
+
+            var shell = Container.Resolve<MainWindow>();
+
+            // CreateShell() returned null so Prism's own Initialize() never ran the shell-specific
+            // RegionManager wiring it normally does right after creating it; do it ourselves.
+            var regionManager = Container.Resolve<IRegionManager>();
+            RegionManager.SetRegionManager(shell, regionManager);
+            RegionManager.UpdateRegions();
+
+            MainWindow = shell;
+            regionManager.RequestNavigate(RegionNames.Content, ViewNames.Welcome);
+            shell.Show();
+            ssoHost.AttachShell(shell);
         }
 
         protected override void OnExit(ExitEventArgs e)

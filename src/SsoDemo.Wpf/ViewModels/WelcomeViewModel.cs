@@ -3,12 +3,12 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using Common.Authentication.Okta;
 using Common.Authentication.Okta.Claims;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Regions;
-using SsoDemo.Wpf.Infrastructure;
 using SsoDemo.Wpf.Services;
 
 namespace SsoDemo.Wpf.ViewModels
@@ -17,31 +17,26 @@ namespace SsoDemo.Wpf.ViewModels
     public sealed class WelcomeViewModel : BindableBase, INavigationAware
     {
         private readonly IOktaAuthenticationService authentication;
-        private readonly IRegionManager regionManager;
         private readonly IDemoApiClient apiClient;
         private readonly IDemoApiBClient apiBClient;
 
         private string displayName = string.Empty;
         private string email = string.Empty;
         private string employeeId = string.Empty;
-        private bool isBusy;
         private bool isCallingApi;
         private string apiResponse = string.Empty;
         private string? apiError;
 
         public WelcomeViewModel(
             IOktaAuthenticationService authentication,
-            IRegionManager regionManager,
             IDemoApiClient apiClient,
             IDemoApiBClient apiBClient)
         {
             this.authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
-            this.regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
             this.apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             this.apiBClient = apiBClient ?? throw new ArgumentNullException(nameof(apiBClient));
 
-            SignOutCommand = new DelegateCommand(async () => await SignOutAsync(), () => !IsBusy)
-                .ObservesProperty(() => IsBusy);
+            ExitCommand = new DelegateCommand(() => Application.Current.Shutdown());
             CallProfileCommand = new DelegateCommand(async () => await CallApiAsync(apiClient.GetProfileAsync), () => !IsCallingApi)
                 .ObservesProperty(() => IsCallingApi);
             CallOrdersCommand = new DelegateCommand(async () => await CallApiAsync(apiClient.GetOrdersAsync), () => !IsCallingApi)
@@ -52,7 +47,7 @@ namespace SsoDemo.Wpf.ViewModels
                 .ObservesProperty(() => IsCallingApi);
         }
 
-        public DelegateCommand SignOutCommand { get; }
+        public DelegateCommand ExitCommand { get; }
 
         public DelegateCommand CallProfileCommand { get; }
 
@@ -81,12 +76,6 @@ namespace SsoDemo.Wpf.ViewModels
         }
 
         public string ApiBaseUrl => apiClient.BaseUrl;
-
-        public bool IsBusy
-        {
-            get => isBusy;
-            private set => SetProperty(ref isBusy, value);
-        }
 
         public bool IsCallingApi
         {
@@ -148,24 +137,6 @@ namespace SsoDemo.Wpf.ViewModels
             finally
             {
                 IsCallingApi = false;
-            }
-        }
-
-        private async Task SignOutAsync()
-        {
-            IsBusy = true;
-            try
-            {
-                await authentication.SignOutAsync(CancellationToken.None);
-                regionManager.RequestNavigate(RegionNames.Content, ViewNames.SignedOut);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[WelcomeViewModel] Sign-out threw: {ex}");
-            }
-            finally
-            {
-                IsBusy = false;
             }
         }
     }

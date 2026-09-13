@@ -32,10 +32,25 @@ namespace Common.Authentication.Okta.Wpf
     ///     base.OnStartup(e); // build the container; register ssoHost.CallbackChannel as IBrowserCallbackChannel
     /// }
     ///
-    /// protected override void OnInitialized()
+    /// // No shell is created here — sign-in is gated ahead of it. See CreateShell/OnInitialized
+    /// // in this app for how the shell itself is deferred until sign-in succeeds.
+    /// protected override async void OnInitialized()
     /// {
     ///     base.OnInitialized();
-    ///     ssoHost!.Activate(MainWindow);
+    ///
+    ///     // Arms scheme registration + callback routing before sign-in starts; no window
+    ///     // needs to exist yet.
+    ///     ssoHost!.Activate();
+    ///
+    ///     if (!await SignInAsync())
+    ///     {
+    ///         Shutdown(1);
+    ///         return;
+    ///     }
+    ///
+    ///     var shell = Container.Resolve&lt;MainWindow&gt;();
+    ///     shell.Show();
+    ///     ssoHost.AttachShell(shell); // lets a later forwarded callback bring it forward
     /// }
     ///
     /// protected override void OnExit(ExitEventArgs e)
@@ -51,6 +66,7 @@ namespace Common.Authentication.Okta.Wpf
         private readonly ISingleInstanceCoordinator singleInstance;
         private readonly ICustomUriSchemeRegistrar schemeRegistrar;
         private string? activationArgument;
+        private Window? shell;
         private bool disposed;
 
         /// <param name="options">The same options passed to <see cref="OktaAuthenticationService"/>.</param>
@@ -127,16 +143,13 @@ namespace Common.Authentication.Okta.Wpf
 
         /// <summary>
         /// Registers the custom URI scheme, starts listening for callbacks forwarded from secondary
-        /// instances, and delivers a callback this launch already carried. Call from
-        /// <c>OnInitialized</c>, once <paramref name="mainWindow"/> exists.
+        /// instances, and delivers a callback this launch already carried. No window is needed for
+        /// any of this — call it before sign-in starts, ahead of the shell existing. Once a shell
+        /// does exist, pass it to <see cref="AttachShell"/> so a later forwarded callback can bring
+        /// it forward.
         /// </summary>
-        public void Activate(Window mainWindow)
+        public void Activate()
         {
-            if (mainWindow is null)
-            {
-                throw new ArgumentNullException(nameof(mainWindow));
-            }
-
             schemeRegistrar.EnsureRegistered();
 
             singleInstance.StartListening(argument =>
@@ -148,14 +161,25 @@ namespace Common.Authentication.Okta.Wpf
 
                 Debug.WriteLine("[OktaSsoHost] Routing forwarded OAuth callback to the browser channel.");
                 CallbackChannel.Publish(argument);
-                mainWindow.Dispatcher.BeginInvoke(new Action(() => ForegroundWindow.Bring(mainWindow)));
+                BringShellForward();
             });
 
             if (activationArgument is not null)
             {
                 CallbackChannel.Publish(activationArgument);
-                ForegroundWindow.Bring(mainWindow);
             }
+        }
+
+        /// <summary>
+        /// Records the shell once it has been shown, so a callback forwarded from a secondary
+        /// launch after this point can bring it to the foreground. Call once, right after showing it.
+        /// </summary>
+        public void AttachShell(Window shell) => this.shell = shell ?? throw new ArgumentNullException(nameof(shell));
+
+        private void BringShellForward()
+        {
+            var window = shell;
+            window?.Dispatcher.BeginInvoke(new Action(() => ForegroundWindow.Bring(window)));
         }
 
         private bool IsSchemeActivation(string? argument) =>

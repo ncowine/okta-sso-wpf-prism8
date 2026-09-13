@@ -39,6 +39,16 @@
     <!-- Reference assemblies for net472 so this project builds headlessly without a full VS/.NET
          Framework targeting-pack install (e.g. on a CI agent that only has the .NET SDK). -->
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+
+    <!-- ConfigurationManager (used by OktaOptionsFactory) is in-box on .NET Framework but, unlike
+         the classic-csproj default, an SDK-style net472 project doesn't reference it implicitly. -->
+    <Reference Include="System.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <!-- ConfigurationManager (used by OktaOptionsFactory) ships in-box on net472 but is a
+         separate package on .NET; the WPF shared framework doesn't pull it in for a library. -->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
   </ItemGroup>
 
 </Project>

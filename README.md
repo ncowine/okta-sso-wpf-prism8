@@ -130,11 +130,10 @@ or with **DebugView** (SysInternals). Prefixes: `[App]`, `[OktaSsoHost]`, `[Okta
 `[HkcuCustomUriSchemeRegistrar]`, `[OktaOptionsFactory]`.
 
 To also tee the same output to a file (useful when not running under a debugger), set
-`SSODEMO_TRACE_FILE` before launching:
+`Diagnostics:TraceFile` in `App.config`:
 
-```
-set SSODEMO_TRACE_FILE=%TEMP%\ssodemo.log
-dotnet run --project src/SsoDemo.Wpf
+```xml
+<add key="Diagnostics:TraceFile" value="C:\temp\ssodemo.log" />
 ```
 
 `Microsoft.Extensions.Logging.Debug` routes the OidcClient library's own logs through the

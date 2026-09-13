@@ -27,10 +27,10 @@
                                Foreground="{StaticResource Brush.Text}" />
                 </StackPanel>
 
-                <Button Content="Sign out"
+                <Button Content="Exit"
                         Style="{StaticResource SecondaryButton}"
                         HorizontalAlignment="Left"
-                        Command="{Binding SignOutCommand}" />
+                        Command="{Binding ExitCommand}" />
             </StackPanel>
         </Border>
 

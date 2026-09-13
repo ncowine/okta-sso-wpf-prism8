@@ -4,18 +4,20 @@
     Runs the WPF app against the bundled dummy IdP + demo APIs, with no real Okta tenant.
 
 .DESCRIPTION
-    Starts tools/DummyIdp, tools/DemoApi and tools/DemoApiB, waits for them, points the WPF app
-    at them, launches it, and stops everything when the app exits.
+    Starts tools/DummyIdp, tools/DemoApi and tools/DemoApiB on the ports SsoDemo.Wpf's App.config
+    already points at (localhost:5005/5006/5007), waits for them, launches the app, and stops
+    everything when it exits. The app itself reads only App.config — no env vars, no params here
+    to keep in sync with it — so if you need different ports, edit App.config to match instead of
+    passing new ones to this script.
 
     DEV ONLY. The app runs with Okta:AllowInsecureHttp = true for this session.
 #>
 [CmdletBinding()]
-param(
-    [string] $IdpUrl   = 'http://localhost:5005',
-    [string] $ApiUrl   = 'http://localhost:5006',
-    [string] $ApiBUrl  = 'http://localhost:5007',
-    [string] $ClientId = 'sso-demo-wpf'
-)
+param()
+
+$IdpUrl   = 'http://localhost:5005'
+$ApiUrl   = 'http://localhost:5006'
+$ApiBUrl  = 'http://localhost:5007'
 
 $ErrorActionPreference = 'Stop'
 $repoRoot  = Split-Path -Parent $PSScriptRoot
@@ -56,12 +58,6 @@ try
     Wait-For "$ApiBUrl/b/health" 'Demo API B'
 
     Write-Host "Services up. Launching the WPF app..." -ForegroundColor Green
-    $env:SSO_OKTA_DOMAIN            = $IdpUrl
-    $env:SSO_OKTA_CLIENTID          = $ClientId
-    $env:SSO_OKTA_ALLOWINSECUREHTTP = 'true'
-    $env:SSO_API_BASEURL            = $ApiUrl
-    $env:SSO_API_BASEURL_B          = $ApiBUrl
-
     dotnet run --project (Join-Path $repoRoot 'src/SsoDemo.Wpf')
 }
 finally

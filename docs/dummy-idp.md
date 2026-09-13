@@ -79,8 +79,7 @@ curl -H "Authorization: Bearer <access_token>" http://localhost:5006/api/partner
 In the app, `BearerTokenHandler` calls `IOktaAuthenticationService.GetAccessTokenAsync()` (which
 refreshes the token near expiry) and attaches it to every request.
 
-Point the app elsewhere with `App.config` `Api:BaseUrl` / `Api:BaseUrlB` (or `SSO_API_BASEURL`
-/ `SSO_API_BASEURL_B`). Point an API at a real Okta tenant via its `appsettings.json`
+Point the app elsewhere with `App.config` `Api:BaseUrl` / `Api:BaseUrlB`. Point an API at a real Okta tenant via its `appsettings.json`
 (`Api:Authority`, `Api:Audience`, `Api:RequireHttpsMetadata`); the IdP's exchangeable audiences
 are `tools/DummyIdp/appsettings.json` → `DummyIdp:ExchangeAudiences`.
 
@@ -99,14 +98,11 @@ dotnet run --project tools/DemoApi             # http://localhost:5006
 dotnet run --project tools/DemoApiB            # http://localhost:5007
 
 # terminal 4 - app
-$env:SSO_OKTA_DOMAIN            = "http://localhost:5005"
-$env:SSO_OKTA_CLIENTID         = "sso-demo-wpf"
-$env:SSO_OKTA_ALLOWINSECUREHTTP = "true"
 dotnet run --project src/SsoDemo.Wpf
 ```
 
-Any `Okta:Name` value in `App.config` can be overridden by the environment variable `SSO_OKTA_NAME`
-(see `OktaOptionsFactory`). Or set the same values directly in `App.config` — the relevant ones:
+The app reads everything from `App.config` — no environment variables. It's already checked in
+pointing at the dummy IdP; the relevant settings are:
 
 ```xml
 <add key="Okta:OktaDomain" value="http://localhost:5005" />

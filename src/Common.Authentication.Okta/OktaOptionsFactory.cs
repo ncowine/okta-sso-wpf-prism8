@@ -3,14 +3,13 @@ using System.Collections.Specialized;
 using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
-using Common.Authentication.Okta;
 
-namespace SsoDemo.Wpf.Infrastructure
+namespace Common.Authentication.Okta
 {
     /// <summary>
-    /// Builds <see cref="OktaAuthenticationOptions"/> from <c>App.config</c> &lt;appSettings&gt;.
-    /// Any <c>Okta:Name</c> setting can be overridden by the environment variable
-    /// <c>SSO_OKTA_NAME</c> (used by <c>scripts/run-demo.ps1</c> to point the app at the dummy IdP).
+    /// Builds <see cref="OktaAuthenticationOptions"/> from a host app's <c>App.config</c>
+    /// &lt;appSettings&gt; — shared here so every host app wires up Okta options the same way
+    /// instead of re-implementing the appSettings/placeholder-detection ceremony per client.
     /// </summary>
     public static class OktaOptionsFactory
     {
@@ -49,12 +48,9 @@ namespace SsoDemo.Wpf.Infrastructure
             return options;
         }
 
-        private static string EnvName(string key) => "SSO_" + key.Replace(':', '_').ToUpperInvariant();
-
         private static string? Raw(NameValueCollection settings, string key)
         {
-            var fromEnv = Environment.GetEnvironmentVariable(EnvName(key));
-            var value = string.IsNullOrWhiteSpace(fromEnv) ? settings[key] : fromEnv;
+            var value = settings[key];
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
@@ -66,8 +62,7 @@ namespace SsoDemo.Wpf.Infrastructure
                 value.Contains("XXXX"))
             {
                 throw new ConfigurationErrorsException(
-                    $"'{key}' is missing or still set to a placeholder value " +
-                    $"(set it in App.config or via the {EnvName(key)} environment variable).");
+                    $"'{key}' is missing or still set to a placeholder value in App.config.");
             }
 
             return value;
