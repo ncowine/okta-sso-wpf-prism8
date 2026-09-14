@@ -4,7 +4,7 @@ namespace Common.Authentication.Okta
 {
     /// <summary>
     /// Strongly-typed configuration for the Okta SSO flow. Populated by the host application
-    /// (in this demo, from <c>App.config</c> &lt;appSettings&gt;).
+    /// (e.g. via <see cref="OktaOptionsFactory.FromAppConfig"/>, from <c>App.config</c> &lt;appSettings&gt;).
     /// </summary>
     public sealed class OktaAuthenticationOptions
     {
@@ -23,7 +23,7 @@ namespace Common.Authentication.Okta
         /// <summary>Expected <c>aud</c> of the access token, e.g. <c>api://default</c>.</summary>
         public string Audience { get; set; } = "api://default";
 
-        /// <summary>Redirect URI registered in Okta. This demo uses a custom scheme.</summary>
+        /// <summary>Redirect URI registered in Okta, typically a custom URI scheme for a native app.</summary>
         public string RedirectUri { get; set; } = "app://auth/callback";
 
         /// <summary>Post-logout redirect URI registered in Okta.</summary>

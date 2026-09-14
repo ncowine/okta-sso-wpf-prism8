@@ -94,10 +94,18 @@ namespace Common.Authentication.Okta.Wpf
                 throw new ArgumentException("An application id is required.", nameof(applicationId));
             }
 
+            ApplicationId = applicationId;
             CallbackChannel = callbackChannel ?? new BrowserCallbackChannel();
             singleInstance = singleInstanceCoordinator ?? new NamedPipeSingleInstanceCoordinator(applicationId);
             this.schemeRegistrar = schemeRegistrar ?? new HkcuCustomUriSchemeRegistrar(options);
         }
+
+        /// <summary>
+        /// The same stable, per-application identifier passed to the constructor. Reused by
+        /// <see cref="DependencyInjection.AddOktaAuthentication"/> to scope <see cref="Tokens.DpapiTokenStore"/>
+        /// so callers don't have to pass it twice.
+        /// </summary>
+        public string ApplicationId { get; }
 
         /// <summary>
         /// The channel the OAuth redirect is delivered through. Register this same instance as

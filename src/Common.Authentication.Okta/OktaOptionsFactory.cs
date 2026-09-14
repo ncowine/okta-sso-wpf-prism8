@@ -17,23 +17,28 @@ namespace Common.Authentication.Okta
         {
             var settings = ConfigurationManager.AppSettings;
 
+            // Defaults for every optional setting live once, on the options class itself — start
+            // from a fresh instance and only overwrite what App.config actually specifies, rather
+            // than restating each default here too.
             var options = new OktaAuthenticationOptions
             {
                 OktaDomain = Required(settings, "Okta:OktaDomain"),
-                AuthorizationServerId = Optional(settings, "Okta:AuthorizationServerId", "default"),
                 ClientId = Required(settings, "Okta:ClientId"),
-                Audience = Optional(settings, "Okta:Audience", "api://default"),
-                RedirectUri = Optional(settings, "Okta:RedirectUri", "app://auth/callback"),
-                PostLogoutRedirectUri = Optional(settings, "Okta:PostLogoutRedirectUri", "app://auth/callback"),
-                Scope = Optional(settings, "Okta:Scope", "openid profile email offline_access"),
-                CustomUriScheme = Optional(settings, "Okta:CustomUriScheme", "app"),
-                ClockSkew = TimeSpan.FromSeconds(OptionalDouble(settings, "Okta:ClockSkewSeconds", 60)),
-                ValidateTokenClientId = OptionalBool(settings, "Okta:ValidateTokenClientId", true),
-                AllowInsecureHttp = OptionalBool(settings, "Okta:AllowInsecureHttp", false),
-                NameSourceClaim = Optional(settings, "Okta:NameSourceClaim", "sub"),
-                EmailSourceClaim = Optional(settings, "Okta:EmailSourceClaim", "SAMAccount"),
-                EmployeeIdSourceClaim = Optional(settings, "Okta:EmployeeIdSourceClaim", "empID"),
             };
+
+            options.AuthorizationServerId = Optional(settings, "Okta:AuthorizationServerId", options.AuthorizationServerId);
+            options.Audience = Optional(settings, "Okta:Audience", options.Audience);
+            options.RedirectUri = Optional(settings, "Okta:RedirectUri", options.RedirectUri);
+            options.PostLogoutRedirectUri = Optional(settings, "Okta:PostLogoutRedirectUri", options.PostLogoutRedirectUri);
+            options.Scope = Optional(settings, "Okta:Scope", options.Scope);
+            options.CustomUriScheme = Optional(settings, "Okta:CustomUriScheme", options.CustomUriScheme);
+            options.ClockSkew = TimeSpan.FromSeconds(
+                OptionalDouble(settings, "Okta:ClockSkewSeconds", options.ClockSkew.TotalSeconds));
+            options.ValidateTokenClientId = OptionalBool(settings, "Okta:ValidateTokenClientId", options.ValidateTokenClientId);
+            options.AllowInsecureHttp = OptionalBool(settings, "Okta:AllowInsecureHttp", options.AllowInsecureHttp);
+            options.NameSourceClaim = Optional(settings, "Okta:NameSourceClaim", options.NameSourceClaim);
+            options.EmailSourceClaim = Optional(settings, "Okta:EmailSourceClaim", options.EmailSourceClaim);
+            options.EmployeeIdSourceClaim = Optional(settings, "Okta:EmployeeIdSourceClaim", options.EmployeeIdSourceClaim);
 
             options.Validate();
             Debug.WriteLine(

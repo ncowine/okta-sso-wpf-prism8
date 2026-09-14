@@ -4,11 +4,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using Common.Authentication.Okta;
-using Common.Authentication.Okta.Browser;
-using Common.Authentication.Okta.Claims;
-using Common.Authentication.Okta.Tokens;
 using Common.Authentication.Okta.Wpf;
-using IdentityModel.OidcClient.Browser;
 using Prism.DryIoc;
 using Prism.Ioc;
 using Prism.Regions;
@@ -92,14 +88,7 @@ namespace SsoDemo.Wpf
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.RegisterInstance(ssoHost!.CallbackChannel);
-            containerRegistry.RegisterInstance(oktaOptions!);
-
-            containerRegistry.RegisterSingleton<IBrowser, SystemBrowser>();
-            containerRegistry.RegisterSingleton<IAccessTokenValidator, OktaAccessTokenValidator>();
-            containerRegistry.RegisterSingleton<IClaimsPrincipalFactory, OktaClaimsPrincipalFactory>();
-            containerRegistry.RegisterSingleton<ITokenStore, DpapiTokenStore>();
-            containerRegistry.RegisterSingleton<IOktaAuthenticationService, OktaAuthenticationService>();
+            containerRegistry.AddOktaAuthentication(oktaOptions!, ssoHost!);
 
             containerRegistry.RegisterInstance(new DemoApiOptions
             {

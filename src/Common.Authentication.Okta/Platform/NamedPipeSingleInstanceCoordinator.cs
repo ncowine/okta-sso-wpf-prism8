@@ -141,7 +141,7 @@ namespace Common.Authentication.Okta.Platform
 
             // BitConverter.ToString/Convert.ToHexString both upper-case; this avoids the
             // .NET-Framework-incompatible Convert.ToHexString overload.
-            return "SsoDemo_" + BitConverter.ToString(hash, 0, 8).Replace("-", string.Empty);
+            return "OktaSso_" + BitConverter.ToString(hash, 0, 8).Replace("-", string.Empty);
         }
 
         public void Dispose()

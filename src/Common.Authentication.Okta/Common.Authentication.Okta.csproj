@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- net8.0-windows for the modern demo host; net472 so any .NET Framework WPF app can
+    <!-- net8.0-windows for modern WPF host apps; net472 so any .NET Framework WPF app can
          reference this library too (it owns the WPF single-instance/custom-scheme ceremony). -->
     <TargetFrameworks>net8.0-windows;net472</TargetFrameworks>
     <UseWPF>true</UseWPF>
@@ -30,6 +30,11 @@
 
     <!-- DPAPI-backed secure storage for the refresh/ID tokens (CurrentUser scope). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+
+    <!-- IContainerRegistry (Prism.Ioc namespace) so this library can expose a single
+         AddOktaAuthentication(...) extension method for every Prism WPF host app to register
+         against, instead of each host hand-rolling the same five registrations. -->
+    <PackageReference Include="Prism.Core" Version="8.1.97" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">

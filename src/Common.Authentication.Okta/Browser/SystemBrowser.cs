@@ -31,9 +31,9 @@ namespace Common.Authentication.Okta.Browser
             try
             {
                 Debug.WriteLine($"[SystemBrowser] Opening default browser: {browserOptions.StartUrl}");
-                if (Environment.GetEnvironmentVariable("SSODEMO_NO_BROWSER") == "1")
+                if (Environment.GetEnvironmentVariable("OKTA_SSO_NO_BROWSER") == "1")
                 {
-                    Debug.WriteLine("[SystemBrowser] SSODEMO_NO_BROWSER=1: not launching a browser (test mode).");
+                    Debug.WriteLine("[SystemBrowser] OKTA_SSO_NO_BROWSER=1: not launching a browser (test mode).");
                 }
                 else
                 {

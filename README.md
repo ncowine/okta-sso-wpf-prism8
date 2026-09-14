@@ -66,8 +66,8 @@ This tenant's **access token** (not the ID token) carries the identity data. The
 | Access-token claim | .NET claim | Notes |
 | --- | --- | --- |
 | `sub` (e.g. `first.lastName`) | `ClaimTypes.Name` | User name — required |
-| `SAMAccount` | `ClaimTypes.Email` + `urn:sso-demo:sam-account` | Email / login id |
-| `empID` | `urn:sso-demo:ad-emp-id` (`CustomClaimTypes.AdEmployeeId`) | AD employee id |
+| `SAMAccount` | `ClaimTypes.Email` + `urn:common-authentication-okta:sam-account` | Email / login id |
+| `empID` | `urn:common-authentication-okta:ad-emp-id` (`CustomClaimTypes.AdEmployeeId`) | AD employee id |
 
 All other validated claims are carried through. `AuthenticationType` is set to `Okta` so
 `principal.Identity.IsAuthenticated` is `true`.

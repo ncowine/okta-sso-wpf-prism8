@@ -7,9 +7,9 @@ namespace Common.Authentication.Okta.Claims
     public static class CustomClaimTypes
     {
         /// <summary>Active Directory employee id (source access-token claim: <c>empID</c>).</summary>
-        public const string AdEmployeeId = "urn:sso-demo:ad-emp-id";
+        public const string AdEmployeeId = "urn:common-authentication-okta:ad-emp-id";
 
         /// <summary>Windows / AD account name (source access-token claim: <c>SAMAccount</c>).</summary>
-        public const string SamAccount = "urn:sso-demo:sam-account";
+        public const string SamAccount = "urn:common-authentication-okta:sam-account";
     }
 }

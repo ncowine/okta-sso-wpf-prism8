@@ -52,7 +52,7 @@ namespace Common.Authentication.Okta.Platform
             var processPath = Process.GetCurrentProcess().MainModule?.FileName
                 ?? throw new InvalidOperationException("Could not determine the current executable path.");
 
-            // When launched through `dotnet run` / `dotnet SsoDemo.Wpf.dll` the host is dotnet.exe;
+            // When launched through `dotnet run` / `dotnet <HostApp>.dll` the host is dotnet.exe;
             // register the managed entry point explicitly so activation still reaches this app.
             if (Path.GetFileName(processPath).Equals("dotnet.exe", StringComparison.OrdinalIgnoreCase))
             {
